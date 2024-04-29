@@ -46,7 +46,8 @@ Wish the web server handles route {/cnc$} with handler {
     }]
 }
 
-When /someone/ wishes to display CNC calibration tag with /...options/ {
+When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
+     /someone/ wishes to display CNC calibration tag with /...options/ {
     set id [dict get $options id]
     set x [dict get $options x]; set y [dict get $options y]
     set scale [dict get $options scale]
@@ -72,7 +73,8 @@ When /someone/ wishes to display CNC calibration tag with /...options/ {
     set bottomRight [list [+ $x $scale] [+ $y $scale]]
     set bottomLeft [list $x [+ $y $scale]]
     Wish the GPU draws pipeline "apriltag" with arguments \
-        [list $tagBitsVec $topLeft $topRight $bottomRight $bottomLeft]
+        [list $tagBitsVec $topLeft $topRight $bottomRight $bottomLeft] \
+        layer 100
 
     Wish to draw a quad with \
         p0 [list 0 0] p1 [list $displayWidth 0] \
