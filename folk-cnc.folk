@@ -1,0 +1,9 @@
+Wish the web server handles route {/cnc$} with handler {
+    html [subst {
+        <html>
+        <body>
+        CNC
+        </body>
+        </html>
+    }]
+}
