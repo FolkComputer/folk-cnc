@@ -1,54 +1,3 @@
-# TODO: display chessboard on projector
-
-Wish the GPU compiles pipeline "apriltag" {
-    {uvec4 tagBitsVec vec2 a vec2 b vec2 c vec2 d} {
-        vec2 vertices[4] = vec2[4](a, b, d, c);
-        return vertices[gl_VertexIndex];
-    } {fn ::invBilinear} {
-        vec2 p = gl_FragCoord.xy;
-        vec2 uv = invBilinear(p, a, b, c, d);
-
-        int x = int(uv.x * 10); int y = int(uv.y * 10);
-        int bitIdx = y * 10 + x;
-        uint bit = (tagBitsVec[bitIdx / 32] >> (bitIdx % 32)) & 0x1;
-        return bit == 1 ? vec4(1, 1, 1, 1) : vec4(0, 0, 0, 1);
-    }
-}
-
-When /someone/ wishes to display CNC calibration tag with /...options/ {
-    set id [dict get $options id]
-    set x [dict get $options x]; set y [dict get $options y]
-    set scale [dict get $options scale]
-
-    set tagImage [::tagImageForId $id]
-    set tagBits [list]
-    # 10x10 AprilTag -> 100 bits
-    for {set y 0} {$y < 10} {incr y} {
-        for {set x 0} {$x < 10} {incr x} {
-            set j [expr {$y * [image_t bytesPerRow $tagImage] + $x}]
-            set bit [== [image_t data $tagImage $j] 255]
-            lappend tagBits $bit
-        }
-    }
-    # -> 4 32-bit integers
-    set tagBitsVec [list 0b[join [lreverse [lrange $tagBits 0 31]] ""] \
-                        0b[join [lreverse [lrange $tagBits 32 63]] ""] \
-                        0b[join [lreverse [lrange $tagBits 64 95]] ""] \
-                        0b[join [lreverse [lrange $tagBits 96 127]] ""]]
-
-    set topLeft [list $x $y]
-    set topRight [list [+ $x $scale] $y]
-    set bottomRight [list [+ $x $scale] [+ $y $scale]]
-    set bottomLeft [list $x [+ $y $scale]]
-    Wish the GPU draws pipeline "apriltag" with arguments \
-        [list $tagBitsVec $topLeft $topRight $bottomRight $bottomLeft]
-
-    Wish to draw a quad with \
-        p0 [list 0 0] p1 [list $displayWidth 0] \
-        p2 [list $displayWidth $displayHeight] p3 [list 0 $displayHeight] \
-        color white layer 99
-}
-
 Wish the web server handles route {/cnc$} with handler {
     html [subst {
         <html>
@@ -95,4 +44,53 @@ Wish the web server handles route {/cnc$} with handler {
         </body>
         </html>
     }]
+}
+
+When /someone/ wishes to display CNC calibration tag with /...options/ {
+    set id [dict get $options id]
+    set x [dict get $options x]; set y [dict get $options y]
+    set scale [dict get $options scale]
+
+    set tagImage [::tagImageForId $id]
+    set tagBits [list]
+    # 10x10 AprilTag -> 100 bits
+    for {set y 0} {$y < 10} {incr y} {
+        for {set x 0} {$x < 10} {incr x} {
+            set j [expr {$y * [image_t bytesPerRow $tagImage] + $x}]
+            set bit [== [image_t data $tagImage $j] 255]
+            lappend tagBits $bit
+        }
+    }
+    # -> 4 32-bit integers
+    set tagBitsVec [list 0b[join [lreverse [lrange $tagBits 0 31]] ""] \
+                        0b[join [lreverse [lrange $tagBits 32 63]] ""] \
+                        0b[join [lreverse [lrange $tagBits 64 95]] ""] \
+                        0b[join [lreverse [lrange $tagBits 96 127]] ""]]
+
+    set topLeft [list $x $y]
+    set topRight [list [+ $x $scale] $y]
+    set bottomRight [list [+ $x $scale] [+ $y $scale]]
+    set bottomLeft [list $x [+ $y $scale]]
+    Wish the GPU draws pipeline "apriltag" with arguments \
+        [list $tagBitsVec $topLeft $topRight $bottomRight $bottomLeft]
+
+    Wish to draw a quad with \
+        p0 [list 0 0] p1 [list $displayWidth 0] \
+        p2 [list $displayWidth $displayHeight] p3 [list 0 $displayHeight] \
+        color white layer 99
+}
+
+Wish the GPU compiles pipeline "apriltag" {
+    {uvec4 tagBitsVec vec2 a vec2 b vec2 c vec2 d} {
+        vec2 vertices[4] = vec2[4](a, b, d, c);
+        return vertices[gl_VertexIndex];
+    } {fn ::invBilinear} {
+        vec2 p = gl_FragCoord.xy;
+        vec2 uv = invBilinear(p, a, b, c, d);
+
+        int x = int(uv.x * 10); int y = int(uv.y * 10);
+        int bitIdx = y * 10 + x;
+        uint bit = (tagBitsVec[bitIdx / 32] >> (bitIdx % 32)) & 0x1;
+        return bit == 1 ? vec4(1, 1, 1, 1) : vec4(0, 0, 0, 1);
+    }
 }
