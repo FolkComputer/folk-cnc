@@ -7,36 +7,42 @@ Wish the web server handles route {/cnc$} with handler {
         Display calibration tag on projector: <button id="displayCalibrationTagButton">Display Calibration Tag</button>
       </li>
       <script>
-       let ws;
-       function redisplayCalibrationTag() {
-         const x = 100;
-         const y = 100;
-         const scale = 50;
-         ws.send(`
+       function stepDisplayCalibrationTag() {
+         let ws;
+         function redisplayCalibrationTag() {
+           const x = 100;
+           const y = 100;
+           const scale = 50;
+           ws.send(`
               Retract folk-cnc wishes to display CNC calibration tag with /...options/
               Assert folk-cnc wishes to display CNC calibration tag with \\
                 id 48600 x ${x} y ${y} scale ${scale}
-         `);
-       }
-       function undisplayCalibrationTag() {
-         ws.send(`
+           `);
+         }
+         function undisplayCalibrationTag() {
+           ws.send(`
               Retract folk-cnc wishes to display CNC calibration tag with /...options/
-         `);
-       }
+           `);
+         }
 
-       displayCalibrationTagButton.addEventListener('click', (e) => {
-         ws = new WebSocket(window.location.origin.replace("http", "ws") + "/ws");
-         ws.onopen = () => {
-           redisplayCalibrationTag();
-           displayCalibrationTagListItem.style.textDecoration = 'line-through';
-           displayCalibrationTagButton.style.textDecoration = 'line-through';
-         };
-         window.onbeforeunload = () => { undisplayCalibrationTag(); };
-       });
+         displayCalibrationTagButton.addEventListener('click', (e) => {
+           ws = new WebSocket(window.location.origin.replace("http", "ws") + "/ws");
+           ws.onopen = () => {
+             redisplayCalibrationTag();
+             doneDisplayCalibrationTag();
+           };
+           window.onbeforeunload = () => { undisplayCalibrationTag(); };
+         });
+       }
+       function doneDisplayCalibrationTag() {
+         displayCalibrationTagListItem.style.textDecoration = 'line-through';
+         displayCalibrationTagButton.style.textDecoration = 'line-through';
+         stepMoveCalibrationTag();
+       }
       </script>
 
-      <li>
-        Move calibration tag so it's on the bed of the material:
+      <li id="moveCalibrationTagListItem" style="display: none">
+        Move calibration tag so it's on the surface of the material:
         <div class="container" style="background: #eee; height: 20em; width: 20em">
           <div class="movable"
             style="background: #444;
@@ -57,72 +63,80 @@ Wish the web server handles route {/cnc$} with handler {
         </div>
       </li>
       <script>
-       function makeDraggable(state, el) {
-         // from https://www.redblobgames.com/making-of/draggable/
-         function start(event) {
-           if (event.button !== 0) return; // left button only
-           event.stopPropagation(); // for nested draggables
-           let {x, y} = state.eventToCoordinates(event);
-           state.dragging = {dx: state.pos.x - x, dy: state.pos.y - y};
-           el.setPointerCapture(event.pointerId);
+       function stepMoveCalibrationTag() {
+         moveCalibrationTagListItem.style.display = "";
+
+         function makeDraggable(state, el) {
+           // from https://www.redblobgames.com/making-of/draggable/
+           function start(event) {
+             if (event.button !== 0) return; // left button only
+             event.stopPropagation(); // for nested draggables
+             let {x, y} = state.eventToCoordinates(event);
+             state.dragging = {dx: state.pos.x - x, dy: state.pos.y - y};
+             el.setPointerCapture(event.pointerId);
+           }
+
+           function end(_event) {
+             state.dragging = null;
+           }
+
+           function move(event) {
+             if (!state.dragging) return;
+             event.stopPropagation(); // for nested draggables
+             let {x, y} = state.eventToCoordinates(event);
+             state.pos = {x: x + state.dragging.dx, y: y + state.dragging.dy};
+           }
+
+           el.addEventListener('pointerdown', start);
+           el.addEventListener('pointerup', end);
+           el.addEventListener('pointercancel', end);
+           el.addEventListener('pointermove', move)
+           el.addEventListener('touchstart', (e) => e.preventDefault());
+         }
+         const el = document.querySelector(".movable");
+         let state = { x: 30, y: 10, size: 100 };
+
+         function resizeAndPosition() {
+           let {x, y, size} = state;
+           el.style.transform = `translate(${x}px,${y}px)`;
+           el.style.width = `${size}px`; el.style.height = `${size}px`;
          }
 
-         function end(_event) {
-           state.dragging = null;
+         let outerState = {
+           eventToCoordinates(event) { return {x: event.clientX, y: event.clientY}; },
+           dragging: false,
+           get pos() { return {x: state.x, y: state.y}; },
+           set pos(p) {
+             const container = el.parentNode.getBoundingClientRect();
+             const bounds = el.getBoundingClientRect();
+             state.x = p.x;
+             state.y = p.y;
+             resizeAndPosition();
+           },
          }
 
-         function move(event) {
-           if (!state.dragging) return;
-           event.stopPropagation(); // for nested draggables
-           let {x, y} = state.eventToCoordinates(event);
-           state.pos = {x: x + state.dragging.dx, y: y + state.dragging.dy};
+         let innerState = {
+           eventToCoordinates(event) { return {x: event.clientX, y: event.clientY}; },
+           dragging: false,
+           get pos() { return {x: state.x + state.size, y: state.y + state.size}; },
+           set pos(p) {
+             state.size = Math.min(Math.max(40, p.x - state.x), Math.max(40, p.y - state.y));
+             resizeAndPosition();
+           },
          }
-
-         el.addEventListener('pointerdown', start);
-         el.addEventListener('pointerup', end);
-         el.addEventListener('pointercancel', end);
-         el.addEventListener('pointermove', move)
-         el.addEventListener('touchstart', (e) => e.preventDefault());
+         resizeAndPosition();
+         makeDraggable(outerState, el);
+         makeDraggable(innerState, document.querySelector(".resize-handle"));
        }
-       const el = document.querySelector(".movable");
-       let state = { x: 30, y: 10, size: 100 };
-
-       function resizeAndPosition() {
-         let {x, y, size} = state;
-         el.style.transform = `translate(${x}px,${y}px)`;
-         el.style.width = `${size}px`; el.style.height = `${size}px`;
-       }
-
-       let outerState = {
-         eventToCoordinates(event) { return {x: event.clientX, y: event.clientY}; },
-         dragging: false,
-         get pos() { return {x: state.x, y: state.y}; },
-         set pos(p) {
-           const container = el.parentNode.getBoundingClientRect();
-           const bounds = el.getBoundingClientRect();
-           state.x = p.x;
-           state.y = p.y;
-           resizeAndPosition();
-         },
-       }
-
-       let innerState = {
-         eventToCoordinates(event) { return {x: event.clientX, y: event.clientY}; },
-         dragging: false,
-         get pos() { return {x: state.x + state.size, y: state.y + state.size}; },
-         set pos(p) {
-           state.size = Math.min(Math.max(40, p.x - state.x), Math.max(40, p.y - state.y));
-           resizeAndPosition();
-         },
-       }
-       resizeAndPosition();
-       makeDraggable(outerState, el);
-       makeDraggable(innerState, document.querySelector(".resize-handle"));
       </script>
 
-      <li>TODO: Detect calibration tag</li>
-      <li>TODO: Move the CNC machine (tool center point) to each of the 4 calibration tag corner points</li>
+      <li id="detectCalibrationTagListItem" style="display: none">TODO: Detect calibration tag</li>
+      <li id="moveCncListItem" style="display: none">TODO: Move the CNC machine (tool center point) to each of the 4 calibration tag corner points</li>
     </ol>
+
+    <script>
+     stepDisplayCalibrationTag();
+    </script>
   </body>
 </html>
     }
