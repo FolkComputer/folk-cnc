@@ -16,6 +16,10 @@ Wish the web server handles route {/cnc$} with handler {
           Retract /anyone/ wishes to display CNC calibration tag with /...options/
        `);
      }
+     function setCalibrationTagCameraCorners(corners) {
+         window.corners = corners;
+         moveCalibrationTagCameraCornersSpan.innerText = JSON.stringify(corners);
+     }
     </script>
 
     <ol>
@@ -69,7 +73,7 @@ Wish the web server handles route {/cnc$} with handler {
                         cursor: nwse-resize"></div>
           </div>
         </div>
-        <span id="moveCalibrationTagCameraCornersSpan"></span>
+        <p>Camera corners: <span id="moveCalibrationTagCameraCornersSpan"></span></p>
         <button id="moveCalibrationTagDoneButton">Done (tag is on material)</button>
       </li>
       <script>
@@ -218,12 +222,16 @@ Wish the GPU compiles pipeline "apriltag" {
 
 When /chan/ wishes to display CNC calibration tag with /...options/ {
     When the clock time is /t/ {
+        # Only report a new tag location to the web frontend every 100ms.
         Claim the CNC calibration tag time is [floor [* $t 10]]
     }
 
     set id [dict get $options id]
     When the CNC calibration tag time is /t/ &\
          tag $id has corners /corners/ {
-        ::websocket::send $chan text "moveCalibrationTagCameraCornersSpan.innerText = `$corners`;"
+        set cornersJs [concat {[} [join [lmap corner $corners {
+            concat {[} [join $corner ","] {]}
+        }] ", "] {]}]
+        ::websocket::send $chan text "setCalibrationTagCameraCorners($cornersJs);"
     }
 }
