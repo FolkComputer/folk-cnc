@@ -6,9 +6,14 @@ Wish the web server handles route {/cnc$} with handler {
      let ws;
      function redisplayCalibrationTag(x = 100, y = 100, size = 50) {
        ws.send(`
-              Retract folk-cnc wishes to display CNC calibration tag with /...options/
-              Assert folk-cnc wishes to display CNC calibration tag with \\
-                id 48600 x ${x} y ${y} size ${size}
+          Retract /anyone/ wishes to display CNC calibration tag with /...options/
+          Assert $chan wishes to display CNC calibration tag with \\
+            id 48600 x ${x} y ${y} size ${size}
+       `);
+     }
+     function undisplayCalibrationTag() {
+       ws.send(`
+          Retract /anyone/ wishes to display CNC calibration tag with /...options/
        `);
      }
     </script>
@@ -19,18 +24,21 @@ Wish the web server handles route {/cnc$} with handler {
       </li>
       <script>
        function stepDisplayCalibrationTag() {
-         function undisplayCalibrationTag() {
-           ws.send(`
-              Retract folk-cnc wishes to display CNC calibration tag with /...options/
-           `);
-         }
-
          displayCalibrationTagButton.addEventListener('click', (e) => {
            ws = new WebSocket(window.location.origin.replace("http", "ws") + "/ws");
            ws.onopen = () => {
              redisplayCalibrationTag();
              doneDisplayCalibrationTag();
            };
+           ws.onclose = () => {
+             document.body.style.background = 'red';
+           };
+           ws.onerror = (err) => {
+             document.body.style.background = 'red';
+             console.error('Socket encountered error: ', err.message, 'Closing socket');
+             ws.close();
+           }
+           ws.onmessage = (msg) => { eval(msg.data); };
            window.onbeforeunload = () => { undisplayCalibrationTag(); };
          });
        }
@@ -61,6 +69,8 @@ Wish the web server handles route {/cnc$} with handler {
                         cursor: nwse-resize"></div>
           </div>
         </div>
+        <span id="moveCalibrationTagCameraCornersSpan"></span>
+        <button id="moveCalibrationTagDoneButton">Done (tag is on material)</button>
       </li>
       <script>
        function stepMoveCalibrationTag() {
@@ -124,11 +134,27 @@ Wish the web server handles route {/cnc$} with handler {
          resizeAndPosition();
          makeDraggable(outerState, el);
          makeDraggable(innerState, document.querySelector(".resize-handle"));
+
+         moveCalibrationTagDoneButton.addEventListener("click", doneMoveCalibrationTag);
+       }
+       function doneMoveCalibrationTag() {
+         moveCalibrationTagListItem.style.textDecoration = "line-through";
+         moveCalibrationTagListItem.querySelector(".container").style.pointerEvents = "none";
+         moveCalibrationTagDoneButton.style.textDecoration = "line-through";
+         // TODO: do other mode switch stuff
+         stepMoveTool();
        }
       </script>
 
-      <li id="detectCalibrationTagListItem" style="display: none">TODO: Detect calibration tag</li>
-      <li id="moveCncListItem" style="display: none">TODO: Move the CNC machine (tool center point) to each of the 4 calibration tag corner points</li>
+      <li id="moveTool" style="display: none">
+        TODO: Move the CNC machine (tool center point) to each of the 4 calibration tag corner points:
+        <button id="moveToolDoneButton">Done</button>
+      </li>
+      <script>
+       function stepMoveTool() {
+         moveTool.style.display = "";
+       }
+      </script>
     </ol>
 
     <script>
@@ -187,5 +213,17 @@ Wish the GPU compiles pipeline "apriltag" {
         int bitIdx = y * 10 + x;
         uint bit = (tagBitsVec[bitIdx / 32] >> (bitIdx % 32)) & 0x1;
         return bit == 1 ? vec4(1, 1, 1, 1) : vec4(0, 0, 0, 1);
+    }
+}
+
+When /chan/ wishes to display CNC calibration tag with /...options/ {
+    When the clock time is /t/ {
+        Claim the CNC calibration tag time is [floor [* $t 10]]
+    }
+
+    set id [dict get $options id]
+    When the CNC calibration tag time is /t/ &\
+         tag $id has corners /corners/ {
+        ::websocket::send $chan text "moveCalibrationTagCameraCornersSpan.innerText = `$corners`;"
     }
 }
