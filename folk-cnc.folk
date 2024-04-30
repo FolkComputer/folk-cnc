@@ -2,23 +2,23 @@ Wish the web server handles route {/cnc$} with handler {
     html {
 <html>
   <body>
+    <script>
+     let ws;
+     function redisplayCalibrationTag(x = 100, y = 100, size = 50) {
+       ws.send(`
+              Retract folk-cnc wishes to display CNC calibration tag with /...options/
+              Assert folk-cnc wishes to display CNC calibration tag with \\
+                id 48600 x ${x} y ${y} size ${size}
+       `);
+     }
+    </script>
+
     <ol>
       <li id="displayCalibrationTagListItem">
         Display calibration tag on projector: <button id="displayCalibrationTagButton">Display Calibration Tag</button>
       </li>
       <script>
        function stepDisplayCalibrationTag() {
-         let ws;
-         function redisplayCalibrationTag() {
-           const x = 100;
-           const y = 100;
-           const scale = 50;
-           ws.send(`
-              Retract folk-cnc wishes to display CNC calibration tag with /...options/
-              Assert folk-cnc wishes to display CNC calibration tag with \\
-                id 48600 x ${x} y ${y} scale ${scale}
-           `);
-         }
          function undisplayCalibrationTag() {
            ws.send(`
               Retract folk-cnc wishes to display CNC calibration tag with /...options/
@@ -75,11 +75,7 @@ Wish the web server handles route {/cnc$} with handler {
              state.dragging = {dx: state.pos.x - x, dy: state.pos.y - y};
              el.setPointerCapture(event.pointerId);
            }
-
-           function end(_event) {
-             state.dragging = null;
-           }
-
+           function end(_event) { state.dragging = null; }
            function move(event) {
              if (!state.dragging) return;
              event.stopPropagation(); // for nested draggables
@@ -100,6 +96,7 @@ Wish the web server handles route {/cnc$} with handler {
            let {x, y, size} = state;
            el.style.transform = `translate(${x}px,${y}px)`;
            el.style.width = `${size}px`; el.style.height = `${size}px`;
+           redisplayCalibrationTag(x, y, size);
          }
 
          let outerState = {
@@ -145,8 +142,8 @@ Wish the web server handles route {/cnc$} with handler {
 When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
      /someone/ wishes to display CNC calibration tag with /...options/ {
     set id [dict get $options id]
-    set x [dict get $options x]; set y [dict get $options y]
-    set scale [dict get $options scale]
+    set tx [dict get $options x]; set ty [dict get $options y]
+    set size [dict get $options size]
 
     set tagImage [::tagImageForId $id]
     set tagBits [list]
@@ -164,10 +161,10 @@ When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
                         0b[join [lreverse [lrange $tagBits 64 95]] ""] \
                         0b[join [lreverse [lrange $tagBits 96 127]] ""]]
 
-    set topLeft [list $x $y]
-    set topRight [list [+ $x $scale] $y]
-    set bottomRight [list [+ $x $scale] [+ $y $scale]]
-    set bottomLeft [list $x [+ $y $scale]]
+    set topLeft [list $tx $ty]
+    set topRight [list [+ $tx $size] $ty]
+    set bottomRight [list [+ $tx $size] [+ $ty $size]]
+    set bottomLeft [list $tx [+ $ty $size]]
     Wish the GPU draws pipeline "apriltag" with arguments \
         [list $tagBitsVec $topLeft $topRight $bottomRight $bottomLeft] \
         layer 100
