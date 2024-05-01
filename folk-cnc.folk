@@ -17,14 +17,20 @@ Wish the web server handles route {/cnc$} with handler {
        `);
      }
      function setCalibrationTagCameraCorners(corners) {
-         window.corners = corners;
-         moveCalibrationTagCameraCornersSpan.innerText = JSON.stringify(corners);
+       window.corners = corners;
+       moveCalibrationTagCameraCornersDiv.innerHTML =
+         `<ol>` +
+         corners.map(corner =>
+           `<li><code>[${corner[0].toFixed(2)}, ${corner[1].toFixed(2)}]</code></li>`
+         ).join("\n") +
+         `</ol>`;
      }
     </script>
 
     <ol>
       <li id="displayCalibrationTagListItem">
-        Display calibration tag on projector: <button id="displayCalibrationTagButton">Display Calibration Tag</button>
+        Display calibration tag on projector:
+        <button id="displayCalibrationTagButton">Display Calibration Tag</button>
       </li>
       <script>
        function stepDisplayCalibrationTag() {
@@ -55,7 +61,7 @@ Wish the web server handles route {/cnc$} with handler {
 
       <li id="moveCalibrationTagListItem" style="display: none">
         Move calibration tag so it's on the surface of the material:
-        <div class="container" style="background: #eee; height: 20em; width: 20em">
+        <div class="container" style="background: #eee; width: 320px; height: 240px">
           <div class="movable"
             style="background: #444;
                       font-family: sans-serif;
@@ -73,7 +79,7 @@ Wish the web server handles route {/cnc$} with handler {
                         cursor: nwse-resize"></div>
           </div>
         </div>
-        <p>Camera corners: <span id="moveCalibrationTagCameraCornersSpan"></span></p>
+        <p>Camera corners: <div id="moveCalibrationTagCameraCornersDiv"></div></p>
         <button id="moveCalibrationTagDoneButton">Done (tag is on material)</button>
       </li>
       <script>
