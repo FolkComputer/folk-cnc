@@ -11,9 +11,10 @@ Wish the web server handles route {/cnc$} with handler {
             id 48600 x ${x} y ${y} size ${size}
        `);
      }
-     function undisplayCalibrationTag() {
+     function destroyCalibrationTag() {
        ws.send(`
-          Retract /anyone/ wishes to display CNC calibration tag with /...options/
+          Retract $chan wishes to move CNC calibration tag
+          Retract $chan wishes to display CNC calibration tag with /...options/
        `);
      }
      function setCalibrationTagCameraCorners(corners) {
@@ -37,7 +38,6 @@ Wish the web server handles route {/cnc$} with handler {
          displayCalibrationTagButton.addEventListener('click', (e) => {
            ws = new WebSocket(window.location.origin.replace("http", "ws") + "/ws");
            ws.onopen = () => {
-             redisplayCalibrationTag();
              doneDisplayCalibrationTag();
            };
            ws.onclose = () => {
@@ -49,19 +49,20 @@ Wish the web server handles route {/cnc$} with handler {
              ws.close();
            }
            ws.onmessage = (msg) => { eval(msg.data); };
-           window.onbeforeunload = () => { undisplayCalibrationTag(); };
+           window.onbeforeunload = () => { destroyCalibrationTag(); };
          });
        }
        function doneDisplayCalibrationTag() {
          displayCalibrationTagListItem.style.textDecoration = 'line-through';
          displayCalibrationTagButton.style.textDecoration = 'line-through';
-         stepMoveCalibrationTag();
+         ws.send(`Assert $chan wishes to move CNC calibration tag`);
        }
       </script>
 
       <li id="moveCalibrationTagListItem" style="display: none">
         Move calibration tag so it's on the surface of the material:
-        <div class="container" style="background: #eee; width: 320px; height: 240px">
+        <div id="moveCalibrationTagContainer" class="container"
+             style="background: #eee; width: 480px; height: 360px">
           <div class="movable"
             style="background: #444;
                       font-family: sans-serif;
@@ -74,7 +75,7 @@ Wish the web server handles route {/cnc$} with handler {
             <b>Drag</b> me + <b>resize</b> from the resize corner
             <div class="resize-handle"
               style="position: absolute; right: 0; bottom: 0;
-                        width: 15px; height: 15px;
+                        width: 12px; height: 12px;
                         background: #c44;
                         cursor: nwse-resize"></div>
           </div>
@@ -83,8 +84,12 @@ Wish the web server handles route {/cnc$} with handler {
         <button id="moveCalibrationTagDoneButton">Done (tag is on material)</button>
       </li>
       <script>
-       function stepMoveCalibrationTag() {
+       function stepMoveCalibrationTag(displayWidth, displayHeight) {
          moveCalibrationTagListItem.style.display = "";
+         const [containerWidth, containerHeight] = [
+           moveCalibrationTagContainer.offsetWidth,
+           moveCalibrationTagContainer.offsetHeight
+         ];
 
          function makeDraggable(state, el) {
            // from https://www.redblobgames.com/making-of/draggable/
@@ -116,7 +121,10 @@ Wish the web server handles route {/cnc$} with handler {
            let {x, y, size} = state;
            el.style.transform = `translate(${x}px,${y}px)`;
            el.style.width = `${size}px`; el.style.height = `${size}px`;
-           redisplayCalibrationTag(x, y, size);
+           // Rescale from container-space to display-space:
+           redisplayCalibrationTag(x * displayWidth / containerWidth,
+                                   y * displayHeight / containerHeight,
+                                   size * displayWidth / containerWidth);
          }
 
          let outerState = {
@@ -137,7 +145,7 @@ Wish the web server handles route {/cnc$} with handler {
            dragging: false,
            get pos() { return {x: state.x + state.size, y: state.y + state.size}; },
            set pos(p) {
-             state.size = Math.min(Math.max(40, p.x - state.x), Math.max(40, p.y - state.y));
+             state.size = Math.min(Math.max(25, p.x - state.x), Math.max(25, p.y - state.y));
              resizeAndPosition();
            },
          }
@@ -226,6 +234,10 @@ Wish the GPU compiles pipeline "apriltag" {
     }
 }
 
+When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
+     /chan/ wishes to move CNC calibration tag {
+    ::websocket::send $chan text "stepMoveCalibrationTag($displayWidth, $displayHeight);"
+}
 When /chan/ wishes to display CNC calibration tag with /...options/ {
     When the clock time is /t/ {
         # Only report a new tag location to the web frontend every 100ms.
