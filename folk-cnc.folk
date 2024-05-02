@@ -4,7 +4,13 @@ Wish the web server handles route {/cnc$} with handler {
   <body>
     <script>
      let ws;
+     let calibrationTagCameraCorners;
+     let calibrationTagProjectorCorners;
      function redisplayCalibrationTag(x = 100, y = 100, size = 50) {
+       calibrationTagProjectorCorners = [
+         [x, y+size], [x+size, y+size],
+         [x+size, y], [x, y],
+       ];
        ws.send(`
           Retract /anyone/ wishes to display CNC calibration tag with /...options/
           Assert $chan wishes to display CNC calibration tag with \\
@@ -13,12 +19,12 @@ Wish the web server handles route {/cnc$} with handler {
      }
      function destroyCalibrationTag() {
        ws.send(`
-          Retract $chan wishes to move CNC calibration tag
+          Retract $chan wishes to start moving CNC calibration tag
           Retract $chan wishes to display CNC calibration tag with /...options/
        `);
      }
      function setCalibrationTagCameraCorners(corners) {
-       window.corners = corners;
+       calibrationTagCameraCorners = corners;
        moveCalibrationTagCameraCornersDiv.innerHTML =
          `<ol>` +
          corners.map(corner =>
@@ -37,9 +43,7 @@ Wish the web server handles route {/cnc$} with handler {
        function stepDisplayCalibrationTag() {
          displayCalibrationTagButton.addEventListener('click', (e) => {
            ws = new WebSocket(window.location.origin.replace("http", "ws") + "/ws");
-           ws.onopen = () => {
-             doneDisplayCalibrationTag();
-           };
+           ws.onopen = () => { doneDisplayCalibrationTag(); };
            ws.onclose = () => {
              document.body.style.background = 'red';
            };
@@ -55,12 +59,13 @@ Wish the web server handles route {/cnc$} with handler {
        function doneDisplayCalibrationTag() {
          displayCalibrationTagListItem.style.textDecoration = 'line-through';
          displayCalibrationTagButton.style.textDecoration = 'line-through';
-         ws.send(`Assert $chan wishes to move CNC calibration tag`);
+         ws.send(`Assert $chan wishes to start moving CNC calibration tag`);
        }
       </script>
 
       <li id="moveCalibrationTagListItem" style="display: none">
-        Move calibration tag so it's on the surface of the material:
+        Move the calibration tag so that it's on the surface of the
+        material that you want to cut:
         <div id="moveCalibrationTagContainer" class="container"
              style="background: #eee; width: 480px; height: 360px">
           <div class="movable"
@@ -80,7 +85,7 @@ Wish the web server handles route {/cnc$} with handler {
                         cursor: nwse-resize"></div>
           </div>
         </div>
-        <p>Camera corners: <div id="moveCalibrationTagCameraCornersDiv"></div></p>
+        <p>Calibration tag corners in camera-space: <div id="moveCalibrationTagCameraCornersDiv">(not detected yet)</div></p>
         <button id="moveCalibrationTagDoneButton">Done (tag is on material)</button>
       </li>
       <script>
@@ -156,21 +161,40 @@ Wish the web server handles route {/cnc$} with handler {
          moveCalibrationTagDoneButton.addEventListener("click", doneMoveCalibrationTag);
        }
        function doneMoveCalibrationTag() {
+         if (!calibrationTagProjectorCorners) {
+           alert("Error: Calibration tag not projected yet; can't continue with calibration.");
+           return;
+         }
+         if (!calibrationTagCameraCorners) {
+           alert("Error: Calibration tag not seen on camera yet; can't continue with calibration.");
+           return;
+         }
          moveCalibrationTagListItem.style.textDecoration = "line-through";
+         // Locks in projector coordinates, since tag can't be moved after this:
          moveCalibrationTagListItem.querySelector(".container").style.pointerEvents = "none";
          moveCalibrationTagDoneButton.style.textDecoration = "line-through";
-         // TODO: do other mode switch stuff
+
+         // Locks in camera coordinates by removing the tag from display:
+         destroyCalibrationTag();
+
          stepMoveTool();
        }
       </script>
 
       <li id="moveTool" style="display: none">
-        TODO: Move the CNC machine (tool center point) to each of the 4 calibration tag corner points:
+        TODO: Move the CNC machine (tool center point) to each of the
+        4 inner corner points of the tag:
+        
         <button id="moveToolDoneButton">Done</button>
       </li>
       <script>
        function stepMoveTool() {
          moveTool.style.display = "";
+
+         const pointsTcl = calibrationTagProjectorCorners.map(corner =>
+           "{" + corner.join(" ") + "}"
+         ).join(" ");
+         ws.send(`Assert $chan wishes to start moving CNC tool point to projector points {${pointsTcl}}`);
        }
       </script>
     </ol>
@@ -235,7 +259,7 @@ Wish the GPU compiles pipeline "apriltag" {
 }
 
 When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
-     /chan/ wishes to move CNC calibration tag {
+     /chan/ wishes to start moving CNC calibration tag {
     ::websocket::send $chan text "stepMoveCalibrationTag($displayWidth, $displayHeight);"
 }
 When /chan/ wishes to display CNC calibration tag with /...options/ {
@@ -252,4 +276,8 @@ When /chan/ wishes to display CNC calibration tag with /...options/ {
         }] ", "] {]}]
         ::websocket::send $chan text "setCalibrationTagCameraCorners($cornersJs);"
     }
+}
+
+When /chan/ wishes to start moving CNC tool point to projector points /points/ {
+    # TODO: display the corners not as an apriltag, just as circles
 }
