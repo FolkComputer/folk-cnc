@@ -7,9 +7,14 @@ Wish the web server handles route {/cnc$} with handler {
      let calibrationTagCameraCorners;
      let calibrationTagProjectorCorners;
      function redisplayCalibrationTag(x = 100, y = 100, size = 50) {
+       const bs = size / 10; // size of a single block in the AprilTag
+       // these are inner corners, not outer corners, to match the
+       // corners that the detector reports:
        calibrationTagProjectorCorners = [
-         [x, y+size], [x+size, y+size],
-         [x+size, y], [x, y],
+         [x+2*bs, y+size-2*bs], // bottomleft
+         [x+size-2*bs, y+size-2*bs], // bottomright
+         [x+size-2*bs, y+2*bs], // topright
+         [x+2*bs, y+2*bs], // topleft
        ];
        ws.send(`
           Retract /anyone/ wishes to display CNC calibration tag with /...options/
@@ -280,4 +285,7 @@ When /chan/ wishes to display CNC calibration tag with /...options/ {
 
 When /chan/ wishes to start moving CNC tool point to projector points /points/ {
     # TODO: display the corners not as an apriltag, just as circles
+    foreach point $points {
+        Wish to draw a circle with center $point radius 5 thickness 2 color green layer 101
+    }
 }
