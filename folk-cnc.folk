@@ -4,6 +4,7 @@ Wish the web server handles route {/cnc$} with handler {
   <head>
     <style>
      li { list-style-position: inside; }
+     li input { background: rgba(255, 255, 255, 0.5); }
     </style>
   </head>
   <body>
@@ -192,8 +193,9 @@ Wish the web server handles route {/cnc$} with handler {
       </script>
 
       <li id="moveTool" style="display: none">
-        TODO: Move the CNC machine (tool center point) to each of the
-        4 inner corner points of the tag:
+        Move the CNC machine (tool center point) to each of the 4
+        inner corner points of the tag. Write down each point's x and
+        y coordinates in CNC-space:
         <ol id="moveToolList">
           <li><input type="text"><input type="text"></li>
           <li><input type="text"><input type="text"></li>
@@ -216,6 +218,28 @@ Wish the web server handles route {/cnc$} with handler {
            `{color ${colors[idx]} index ${idx+1} position {${corner.join(" ")}}}`
          ).join(" ");
          ws.send(`Assert $chan wishes to start moving CNC tool point to projector points {${pointsTcl}}`);
+
+         moveToolDoneButton.addEventListener("click", doneMoveTool);
+       }
+       function doneMoveTool() {
+         moveTool.style.textDecoration = "line-through";
+
+         // Lock in CNC coordinates.
+
+         stepPreviewGcode();
+       }
+      </script>
+
+      <li id="previewGcode" style="display: none">
+        TODO: Upload a G-code file to preview:
+        <input type="file" id="previewGcodeFileInput">
+      </li>
+      <script>
+       function stepPreviewGcode() {
+         previewGcode.style.display = "";
+         previewGcodeFileInput.addEventListener("change", () => {
+           console.log(previewGcodeFileInput.files);
+         });
        }
       </script>
     </ol>
