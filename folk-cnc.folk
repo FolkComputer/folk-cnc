@@ -1,4 +1,4 @@
-Wish the web server handles route {/cnc$} with handler {
+Wish the web server handles route {/cnc/$} with handler {
     html {
 <html>
   <head>
@@ -194,8 +194,8 @@ Wish the web server handles route {/cnc$} with handler {
 
       <li id="moveTool" style="display: none">
         Move the CNC machine (tool center point) to each of the 4
-        inner corner points of the tag. Write down each point's x and
-        y coordinates in CNC-space:
+        inner corners of the tag. Write down each point's x and y
+        coordinates in CNC-space:
         <ol id="moveToolList">
           <li><input type="text"><input type="text"></li>
           <li><input type="text"><input type="text"></li>
@@ -224,7 +224,7 @@ Wish the web server handles route {/cnc$} with handler {
        function doneMoveTool() {
          moveTool.style.textDecoration = "line-through";
 
-         // Lock in CNC coordinates.
+         // TODO: Lock in CNC coordinates.?
 
          stepPreviewGcode();
        }
@@ -234,11 +234,40 @@ Wish the web server handles route {/cnc$} with handler {
         TODO: Upload a G-code file to preview:
         <input type="file" id="previewGcodeFileInput">
       </li>
-      <script>
-       function stepPreviewGcode() {
+      <script src="./vendor/peggy.min.js"></script>
+      <script type="module">
+       import { interpret } from "./gcode.js";
+
+       window.stepPreviewGcode = function stepPreviewGcode() {
          previewGcode.style.display = "";
          previewGcodeFileInput.addEventListener("change", () => {
-           console.log(previewGcodeFileInput.files);
+           if (previewGcodeFileInput.files.length !== 1) return;
+           const file = previewGcodeFileInput.files[0];
+
+           const reader = new FileReader();
+           reader.onload = (e) => {
+             const content = e.target.result;
+             const { path: totalPath } = interpret(content);
+
+             // Separate paths based on Z
+             const paths = [];
+             let currentPath = [];
+             for (let i = 0; i < totalPath.length; i += 1) {
+               const [x, y, z] = totalPath[i];
+
+               if (z > 0) {
+                 if (currentPath.length > 0) {
+                   paths.push(currentPath);
+                   currentPath = [];
+                 }
+               } else {
+                 currentPath.push({ x, y });
+               }
+             }
+
+             console.log("paths", paths);
+           };
+           reader.readAsText(file);
          });
        }
       </script>
@@ -251,6 +280,18 @@ Wish the web server handles route {/cnc$} with handler {
 </html>
     }
 }
+Wish the web server handles route {/cnc/(.+)$} with handler [list apply {{this} {
+    upvar path path; regexp {/cnc/(.+)$} $path -> filename
+    set fd [open [file dirname $this]/$filename r]
+    fconfigure $fd -encoding binary -translation binary
+    set body [read $fd]; close $fd
+
+    return [dict create \
+                statusAndHeaders "HTTP/1.1 200 OK
+Connection: close
+Content-Type: text/javascript; charset=utf-8\n\n" \
+                body $body]
+}} $this]
 
 When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
      /someone/ wishes to display CNC calibration tag with /...options/ {
