@@ -193,9 +193,11 @@ Wish the web server handles route {/cnc/$} with handler {
       </script>
 
       <li id="moveTool" style="display: none">
-        Move the CNC machine (tool center point) to each of the 4
-        inner corners of the tag. Write down each point's x and y
-        coordinates in CNC-space:
+        Set the CNC machine's zero point to the bottom-left corner of
+        your material. Move the CNC machine to each of the 4 inner
+        corners of the tag (should be circled on the material
+        now). Write down each point's (x, y) coordinates in
+        CNC-space:
         <ol id="moveToolList">
           <li><input type="text"><input type="text"></li>
           <li><input type="text"><input type="text"></li>
