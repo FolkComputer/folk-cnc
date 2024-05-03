@@ -193,11 +193,15 @@ Wish the web server handles route {/cnc/$} with handler {
       </script>
 
       <li id="moveTool" style="display: none">
-        Set the CNC machine's zero point to the bottom-left corner of
-        your material. Move the CNC machine to each of the 4 inner
-        corners of the tag (should be circled on the material
-        now). Write down each point's (x, y) coordinates in
-        CNC-space:
+        <p>The 4 inner corners of the tag should be circled on the
+          material now; you probably want to make pencil marks at
+          those points (for when the projection is occluded).</p>
+        <p>Set the CNC machine's zero point to the bottom-left corner
+          of your material (or wherever you want your zero point to
+          be).</p>
+        <p>Move the CNC machine to each of the 4 circled corner
+        points, and write down each point's (x, y) coordinates in
+        CNC-space (probably in millimeters):</p>
         <ol id="moveToolList">
           <li><input type="text"><input type="text"></li>
           <li><input type="text"><input type="text"></li>
@@ -205,7 +209,7 @@ Wish the web server handles route {/cnc/$} with handler {
           <li><input type="text"><input type="text"></li>
         </ol>
         
-        <button id="moveToolDoneButton">Done</button>
+        <button id="moveToolDoneButton">Done (wrote all CNC points)</button>
       </li>
       <script>
        function stepMoveTool() {
