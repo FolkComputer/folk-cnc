@@ -213,7 +213,7 @@ Wish the web server handles route {/cnc/$} with handler {
 
          const colors = ["green", "yellow", "cyan", "magenta"];
 
-         pointEls = document.querySelectorAll("#moveToolList > li");
+         const pointEls = document.querySelectorAll("#moveToolList > li");
          colors.forEach((color, idx) => { pointEls[idx].style.background = color; });
 
          const pointsTcl = calibrationTagProjectorCorners.map((corner, idx) =>
@@ -223,10 +223,16 @@ Wish the web server handles route {/cnc/$} with handler {
 
          moveToolDoneButton.addEventListener("click", doneMoveTool);
        }
+       function getCalibrationTagCncCorners() {
+         return [...document.querySelectorAll("#moveToolList > li")].map(pointEl =>
+           [...pointEl.querySelectorAll("input")].map(input => parseFloat(input.value))
+         );
+       }
        function doneMoveTool() {
          moveTool.style.textDecoration = "line-through";
 
          // TODO: Lock in CNC coordinates.?
+         ws.send(`Retract $chan wishes to start moving CNC tool point to projector points /any/`);
 
          stepPreviewGcode();
        }
@@ -263,11 +269,19 @@ Wish the web server handles route {/cnc/$} with handler {
                    currentPath = [];
                  }
                } else {
-                 currentPath.push({ x, y });
+                 currentPath.push([ x, y ]);
                }
              }
 
-             console.log("paths", paths);
+             function tclizePoints(points) {
+               return points.map(([x, y]) => `{${x} ${y}}`).join(" ")
+             }
+             const pathsTcl = paths.map(path => "{" + tclizePoints(path) + "}").join(" ");
+             const calibrationTagCncCornersTcl = tclizePoints(getCalibrationTagCncCorners());
+             const calibrationTagProjectorCornersTcl = tclizePoints(calibrationTagProjectorCorners);
+             ws.send(`Assert $chan wishes to preview CNC gcode paths {${pathsTcl}} with \\
+                        cnc-corners {${calibrationTagCncCornersTcl}} \\
+                        projector-corners {${calibrationTagProjectorCornersTcl}}`);
            };
            reader.readAsText(file);
          });
@@ -386,4 +400,52 @@ When /chan/ wishes to start moving CNC tool point to projector points /points/ {
                 radius 5 thickness 2 layer 102
         }
     }
+}
+
+When /chan/ wishes to preview CNC gcode paths /paths/ with /...options/ {
+    set cncCorners [dict get $options cnc-corners]
+    set projectorCorners [dict get $options projector-corners]
+    for {set i 0} {$i < 4} {incr i} {
+        lassign [lindex $cncCorners $i] x$i y$i
+        lassign [lindex $projectorCorners $i] u$i v$i
+    }
+    set A [subst {
+        {$x0 $y0 1 0   0   0 [expr -$x0*$u0] [expr -$y0*$u0]}
+        {$x1 $y1 1 0   0   0 [expr -$x1*$u1] [expr -$y1*$u1]}
+        {$x2 $y2 1 0   0   0 [expr -$x2*$u2] [expr -$y2*$u2]}
+        {$x3 $y3 1 0   0   0 [expr -$x3*$u3] [expr -$y3*$u3]}
+        {0   0   0 $x0 $y0 1 [expr -$x0*$v0] [expr -$y0*$v0]}
+        {0   0   0 $x1 $y1 1 [expr -$x1*$v1] [expr -$y1*$v1]}
+        {0   0   0 $x2 $y2 1 [expr -$x2*$v2] [expr -$y2*$v2]}
+        {0   0   0 $x3 $y3 1 [expr -$x3*$v3] [expr -$y3*$v3]}
+    }]
+    set b [list $u0 $u1 $u2 $u3 $v0 $v1 $v2 $v3]
+
+    lassign [solvePGauss $A $b] a0 a1 a2 b0 b1 b2 c0 c1
+    # CNC->projector homography:
+    set H [subst {
+        {$a0 $a1 $a2}
+        {$b0 $b1 $b2}
+        {$c0 $c1 1}
+    }]
+
+    set project [list apply {{a0 a1 a2 b0 b1 b2 c0 c1 x y} {
+        set Hx [expr {$a0*$x + $a1*$y + $a2}]
+        set Hy [expr {$b0*$x + $b1*$y + $b2}]
+        set Hz [expr {$c0*$x + $c1*$y + 1.0}]
+        return [list [/ $Hx $Hz] [/ $Hy $Hz]]
+    }} $a0 $a1 $a2 $b0 $b1 $b2 $c0 $c1]
+
+    set instances [list]
+    foreach path $paths {
+        set prevProjPoint none
+        foreach point $path {
+            set projPoint [{*}$project {*}$point]
+            if {$prevProjPoint ne "none"} {
+                lappend instances [list $prevProjPoint $projPoint 2 [getColor green]]
+            }
+            set prevProjPoint $projPoint
+        }
+    }
+    Wish the GPU draws pipeline "line" with instances $instances
 }
