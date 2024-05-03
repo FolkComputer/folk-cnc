@@ -1,6 +1,11 @@
 Wish the web server handles route {/cnc$} with handler {
     html {
 <html>
+  <head>
+    <style>
+     li { list-style-position: inside; }
+    </style>
+  </head>
   <body>
     <script>
      let ws;
@@ -189,7 +194,7 @@ Wish the web server handles route {/cnc$} with handler {
       <li id="moveTool" style="display: none">
         TODO: Move the CNC machine (tool center point) to each of the
         4 inner corner points of the tag:
-        <ol>
+        <ol id="moveToolList">
           <li><input type="text"><input type="text"></li>
           <li><input type="text"><input type="text"></li>
           <li><input type="text"><input type="text"></li>
@@ -202,8 +207,13 @@ Wish the web server handles route {/cnc$} with handler {
        function stepMoveTool() {
          moveTool.style.display = "";
 
+         const colors = ["green", "yellow", "cyan", "magenta"];
+
+         pointEls = document.querySelectorAll("#moveToolList > li");
+         colors.forEach((color, idx) => { pointEls[idx].style.background = color; });
+
          const pointsTcl = calibrationTagProjectorCorners.map((corner, idx) =>
-           `{color green index ${idx+1} position {${corner.join(" ")}}}`
+           `{color ${colors[idx]} index ${idx+1} position {${corner.join(" ")}}}`
          ).join(" ");
          ws.send(`Assert $chan wishes to start moving CNC tool point to projector points {${pointsTcl}}`);
        }
