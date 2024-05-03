@@ -189,6 +189,12 @@ Wish the web server handles route {/cnc$} with handler {
       <li id="moveTool" style="display: none">
         TODO: Move the CNC machine (tool center point) to each of the
         4 inner corner points of the tag:
+        <ol>
+          <li><input type="text"><input type="text"></li>
+          <li><input type="text"><input type="text"></li>
+          <li><input type="text"><input type="text"></li>
+          <li><input type="text"><input type="text"></li>
+        </ol>
         
         <button id="moveToolDoneButton">Done</button>
       </li>
@@ -196,8 +202,8 @@ Wish the web server handles route {/cnc$} with handler {
        function stepMoveTool() {
          moveTool.style.display = "";
 
-         const pointsTcl = calibrationTagProjectorCorners.map(corner =>
-           "{" + corner.join(" ") + "}"
+         const pointsTcl = calibrationTagProjectorCorners.map((corner, idx) =>
+           `{color green index ${idx+1} position {${corner.join(" ")}}}`
          ).join(" ");
          ws.send(`Assert $chan wishes to start moving CNC tool point to projector points {${pointsTcl}}`);
        }
@@ -242,6 +248,8 @@ When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
         [list $tagBitsVec $topLeft $topRight $bottomRight $bottomLeft] \
         layer 100
 
+    # Blanket the whole projector area with white, except the tag, so
+    # that we're more likely to detect the tag in contrast.
     Wish to draw a quad with \
         p0 [list 0 0] p1 [list $displayWidth 0] \
         p2 [list $displayWidth $displayHeight] p3 [list 0 $displayHeight] \
@@ -267,6 +275,12 @@ When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
      /chan/ wishes to start moving CNC calibration tag {
     ::websocket::send $chan text "stepMoveCalibrationTag($displayWidth, $displayHeight);"
 }
+
+if {$::tcl_platform(os) eq "Darwin"} {
+    # HACK: for laptop testing:
+    Claim tag 48600 has corners {{0 0} {100 100} {200 200} {300 300}}
+}
+
 When /chan/ wishes to display CNC calibration tag with /...options/ {
     When the clock time is /t/ {
         # Only report a new tag location to the web frontend every 100ms.
@@ -286,6 +300,13 @@ When /chan/ wishes to display CNC calibration tag with /...options/ {
 When /chan/ wishes to start moving CNC tool point to projector points /points/ {
     # TODO: display the corners not as an apriltag, just as circles
     foreach point $points {
-        Wish to draw a circle with center $point radius 5 thickness 2 color green layer 101
+        dict with point {
+            Wish to draw text with position $position text " $index " \
+                color $color \
+                anchor [expr {($index == 1 || $index == 4) ? "right" : "left"}] \
+                scale 1.0 layer 101
+            Wish to draw a circle with center $position color $color \
+                radius 5 thickness 2 layer 102
+        }
     }
 }
