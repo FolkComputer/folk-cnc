@@ -1,5 +1,7 @@
 # folk-cnc
 
+FIXME.
+
 ## Usage
 
 1. [Set up a Folk system.](https://git.folk.computer/folk/about/)
@@ -7,7 +9,7 @@
    stick (if you are using a USB stick) or into `~/folk-live/folk-cnc`
    (if you are using your own Linux; you may need to create
    `~/folk-live` first).
-3. Go to https://folk-WHATEVER.local:4273/cnc and follow the
+3. Go to <https://folk-WHATEVER.local:4273/cnc/> and follow the
    instructions.
 
 ## License
@@ -22,4 +24,4 @@ part of the original project; folk-cnc inherits Owen's high-level
 approach (but using an AprilTag instead of checkerboard) and the gcode
 parser that he implemented.
 
-Supported by [Gradient Retreat](Gradient Retreat).
+Supported by [Gradient Retreat](https://www.gradientretreat.com).
