@@ -1,24 +1,28 @@
 # folk-cnc
 
-[Folk](https://folk.computer)-based projector preview on CNC machine
-bed.
+Projector preview on CNC machine bed. Built on top of
+[Folk](https://folk.computer).
 
-Calibrate your CNC machine + projector, upload a gcode file, and
-folk-cnc will display a preview of where your CNC machine will cut.
+Calibrate your CNC machine + projector + material surface, upload a
+gcode file, and folk-cnc will display a preview of where your CNC
+machine will cut.
 
 Calibrating:
 
 <img src="doc/01-calibration-display.jpeg" width="300"> <img src="doc/00-calibration-bed.jpeg" width="300">
 
-
-Before cut (notice the projection on the uncut wood) -> after cut (see
-how the projection is roughly aligned with the cut that was executed)
+Before cut (notice the preview projection on the uncut wood) -> after
+cut (see how the projection was [roughly] aligned with the cut)
 
 <img src="doc/02-before-cut.jpeg" width="300"> <img src="doc/03-after-cut.jpeg" width="300">
 
 (Accuracy depends on how well you calibrate for now, and you have to
 recalibrate for each material/session -- we want to improve this
-process over time so we can reuse more and more calibration information.)
+process over time so we can reuse more and more calibration
+information.)
+
+TODO: use 3d calibration, make gcode driver so you can have Folk
+plugged into the machine
 
 ## Usage
 
