@@ -3,6 +3,10 @@
 Projector preview on CNC machine bed. Built on top of
 [Folk](https://folk.computer).
 
+(This was last tested on Folk
+[ca64310a0d6ccdba181dbede469f2f7fe978bedd](https://github.com/FolkComputer/folk/commit/ca64310a0d6ccdba181dbede469f2f7fe978bedd)
+on September 23, 2024.)
+
 Calibrate your CNC machine + projector + material surface, upload a
 gcode file, and folk-cnc will display a preview of where your CNC
 machine will cut.

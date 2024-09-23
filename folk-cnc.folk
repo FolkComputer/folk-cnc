@@ -235,7 +235,6 @@ Wish the web server handles route {/cnc/$} with handler {
        function doneMoveTool() {
          moveTool.style.textDecoration = "line-through";
 
-         // TODO: Lock in CNC coordinates.?
          ws.send(`Retract $chan wishes to start moving CNC tool point to projector points /any/`);
 
          stepPreviewGcode();
@@ -243,7 +242,7 @@ Wish the web server handles route {/cnc/$} with handler {
       </script>
 
       <li id="previewGcode" style="display: none">
-        TODO: Upload a G-code file to preview:
+        Upload a G-code file to preview:
         <input type="file" id="previewGcodeFileInput">
       </li>
       <script src="./vendor/peggy.min.js"></script>
@@ -394,7 +393,6 @@ When /chan/ wishes to display CNC calibration tag with /...options/ {
 }
 
 When /chan/ wishes to start moving CNC tool point to projector points /points/ {
-    # TODO: display the corners not as an apriltag, just as circles
     foreach point $points {
         dict with point {
             Wish to draw text with position $position text " $index " \
