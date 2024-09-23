@@ -384,7 +384,8 @@ When /chan/ wishes to display CNC calibration tag with /...options/ {
 
     set id [dict get $options id]
     When the CNC calibration tag time is /t/ &\
-         tag $id has corners /corners/ {
+         tag $id has detection /det/ on /camera/ at /timestamp/ {
+        set corners [dict get $det p]
         set cornersJs [concat {[} [join [lmap corner $corners {
             concat {[} [join $corner ","] {]}
         }] ", "] {]}]
