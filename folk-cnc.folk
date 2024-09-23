@@ -313,7 +313,7 @@ Content-Type: text/javascript; charset=utf-8\n\n" \
                 body $body]
 }} $this]
 
-When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
+When display /disp/ has width /displayWidth/ height /displayHeight/ &\
      /someone/ wishes to display CNC calibration tag with /...options/ {
     set id [dict get $options id]
     set tx [dict get $options x]; set ty [dict get $options y]
@@ -366,7 +366,7 @@ Wish the GPU compiles pipeline "apriltag" {
     }
 }
 
-When the display /disp/ has width /displayWidth/ height /displayHeight/ &\
+When display /disp/ has width /displayWidth/ height /displayHeight/ &\
      /chan/ wishes to start moving CNC calibration tag {
     ::websocket::send $chan text "stepMoveCalibrationTag($displayWidth, $displayHeight);"
 }
